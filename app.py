@@ -2,14 +2,21 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import numpy as np
 
-# Configuración
+# =====================================
+# CONFIGURACIÓN
+# =====================================
+
 st.set_page_config(
     page_title="Ingeniería de Materiales",
     layout="wide"
 )
 
-# Leer base de datos
+# =====================================
+# CARGAR BASE DE DATOS
+# =====================================
+
 import os
 
 # Buscamos de forma automática cualquier archivo que termine en .csv
@@ -23,134 +30,124 @@ else:
     st.error("¡Ups! No se encontró ningún archivo .csv en el repositorio. Revisa que esté subido.")
     st.stop()
 
+# =====================================
+# TÍTULO
+# =====================================
 
-# Título principal
 st.title("Análisis de Propiedades Mecánicas del Acero")
 
 st.write("""
-Aplicación interactiva para analizar la influencia del porcentaje
-de carbono y los tratamientos térmicos sobre las propiedades
-mecánicas del acero.
+Sitio web interactivo para analizar la influencia
+del porcentaje de carbono y de los tratamientos térmicos
+sobre las propiedades mecánicas del acero.
 """)
 
-# Sidebar
-st.sidebar.header("Opciones")
-
-property_selected = st.sidebar.selectbox(
-    "Selecciona propiedad mecánica",
-    [
-        "UTS (MPa)",
-        "YS (MPa)",
-        "Hardness (HB)",
-        "Elongation (%)"
-    ]
-)
-
-# =========================
+# =====================================
 # GRÁFICA 1
-# =========================
+# =====================================
 
-st.header("Propiedades mecánicas vs porcentaje de carbono")
+st.header("Líneas de tendencia: propiedades mecánicas vs porcentaje de carbono")
 
-fig1 = px.scatter(
-    df,
-    x="C (Max)",
-    y=property_selected,
-    color="Conditions",
-    title=f"{property_selected} vs porcentaje de carbono",
-    template="plotly_dark"
+df_filtered = df[df['%C'] < 2.0]
+
+fig1 = go.Figure()
+
+mechanical_properties = {
+    'UTS (MPa)': 'UTS (MPa)',
+    'YS (MPa)': 'YS (MPa)',
+    'Hardness (HB)': 'Hardness (HB)',
+    'Elongation (%)': 'Elongation (%)'
+}
+
+x_min = df_filtered['%C'].min()
+x_max = df_filtered['%C'].max()
+x_range = np.array([x_min, x_max])
+
+for prop_col, name in mechanical_properties.items():
+
+    temp_df = df_filtered.dropna(subset=['%C', prop_col])
+
+    if not temp_df.empty:
+
+        slope, intercept = np.polyfit(
+            temp_df['%C'],
+            temp_df[prop_col],
+            1
+        )
+
+        y_trend = slope * x_range + intercept
+
+        fig1.add_trace(go.Scatter(
+            x=x_range,
+            y=y_trend,
+            mode='lines',
+            name=f'Tendencia {name}',
+            line=dict(width=4)
+        ))
+
+fig1.update_layout(
+    title="Propiedades mecánicas vs porcentaje de carbono",
+    xaxis_title="Contenido de carbono promedio (%C)",
+    yaxis_title="Valor de propiedad",
+    template="plotly_dark",
+    height=700
 )
 
 st.plotly_chart(fig1, use_container_width=True)
 
-# =========================
+# =====================================
 # GRÁFICA 2
-# =========================
+# =====================================
 
-st.header("Distribución según tratamiento térmico")
-
-main_conditions = [
-    "Hot Rolled",
-    "Cold Drawn",
-    "Normalized At 870 °C (1600 °F)",
-    "Annealed At 855 °C (1575 °F)"
-]
-
-filtered_box = df[df["Conditions"].isin(main_conditions)]
+st.header("UTS según grupo de tratamiento")
 
 fig2 = px.box(
-    filtered_box,
-    y="Conditions",
-    x=property_selected,
-    color="Conditions",
-    title=f"Distribución de {property_selected}",
-    template="plotly_dark"
+    df,
+    x='Treatment Group',
+    y='UTS (MPa)',
+    title='UTS (MPa) por Grupo de Tratamiento',
+    labels={
+        'Treatment Group': 'Grupo de Tratamiento',
+        'UTS (MPa)': 'Resistencia a la Tracción (MPa)'
+    },
+    template='plotly_dark',
+    color='Treatment Group'
 )
 
 fig2.update_layout(
-    height=600,
-    showlegend=False
+    height=650
 )
 
 st.plotly_chart(fig2, use_container_width=True)
 
-# =========================
+# =====================================
 # GRÁFICA 3
-# =========================
+# =====================================
 
-st.header("Annealed vs temperatura")
+st.header("Dureza según grupo de tratamiento")
 
-annealed_df = df[
-    df["Conditions"].str.contains("Annealed", case=False, na=False)
-].copy()
-
-annealed_df["Temperature"] = (
-    annealed_df["Conditions"]
-    .str.extract(r'(\d+)')
-    .astype(float)
+fig3 = px.box(
+    df,
+    x='Treatment Group',
+    y='Hardness (HB)',
+    title='Dureza (HB) por Grupo de Tratamiento',
+    labels={
+        'Treatment Group': 'Grupo de Tratamiento',
+        'Hardness (HB)': 'Dureza (HB)'
+    },
+    template='plotly_dark',
+    color='Treatment Group'
 )
 
-fig3 = px.scatter(
-    annealed_df,
-    x="Temperature",
-    y=property_selected,
-    color="C (Max)",
-    title=f"{property_selected} vs temperatura Annealed",
-    template="plotly_dark"
+fig3.update_layout(
+    height=650
 )
 
 st.plotly_chart(fig3, use_container_width=True)
 
-# =========================
-# GRÁFICA 4
-# =========================
-
-st.header("Normalized vs temperatura")
-
-normalized_df = df[
-    df["Conditions"].str.contains("Normalized", case=False, na=False)
-].copy()
-
-normalized_df["Temperature"] = (
-    normalized_df["Conditions"]
-    .str.extract(r'(\d+)')
-    .astype(float)
-)
-
-fig4 = px.scatter(
-    normalized_df,
-    x="Temperature",
-    y=property_selected,
-    color="C (Max)",
-    title=f"{property_selected} vs temperatura Normalized",
-    template="plotly_dark"
-)
-
-st.plotly_chart(fig4, use_container_width=True)
-
-# =========================
+# =====================================
 # CONCLUSIONES
-# =========================
+# =====================================
 
 st.header("Conclusiones")
 
@@ -158,12 +155,16 @@ st.write("""
 - El porcentaje de carbono influye significativamente
 en las propiedades mecánicas del acero.
 
-- Los tratamientos térmicos modifican el comportamiento
-mecánico del material.
+- Conforme aumenta el contenido de carbono,
+la dureza y la resistencia mecánica tienden a aumentar.
 
-- El incremento de carbono generalmente aumenta
-la dureza y resistencia.
+- Los tratamientos térmicos producen variaciones importantes
+en el comportamiento mecánico del material.
+
+- Los diagramas tipo boxplot permiten visualizar
+la dispersión y distribución de propiedades mecánicas
+según el tratamiento aplicado.
 
 - La visualización interactiva facilita el análisis
-de materiales en ingeniería.
+de grandes cantidades de datos experimentales.
 """)
