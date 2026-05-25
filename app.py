@@ -458,31 +458,78 @@ with tab5:
     if nor.empty:
         st.warning("No hay datos de Normalized en el rango filtrado.")
     else:
-        xs, ys = nor['Temperature'].values, nor['UTS (MPa)'].values
-        slope, inter = np.polyfit(xs, ys, 1) if len(xs) > 1 else (0, ys.mean())
-        xs_s = np.sort(xs)
+        # =================================================================
+        # REEMPLAZO SEGURO Y ALINEADO PARA LA GRÁFICA 5 (MÓDULO NORMALIZED)
+        # =================================================================
+        # Buscamos automáticamente las columnas correctas en tu archivo
+        col_temp_5 = [c for c in df.columns if 'temp' in c.lower()]
+        col_uts_5 = [c for c in df.columns if 'uts' in c.lower() or 'tracc' in c.lower() or 'resis' in c.lower()]
+        col_c_5 = [c for c in df.columns if '%c' in c.lower() or 'carbon' in c.lower()]
+        col_grade_5 = [c for c in df.columns if 'grade' in c.lower() or 'grado' in c.lower() or 'acer' in c.lower()]
 
-        fig5 = go.Figure()
-        fig5.add_trace(go.Scatter(
-            x=nor['Temperature'], y=nor['UTS (MPa)'],
-            mode='markers',
-            marker=dict(color=nor['%C'], colorscale='Viridis', size=10,
-                colorbar=dict(title='%C', thickness=12, tickfont=dict(color='#6b6b7a'), titlefont=dict(color='#6b6b7a'))),
-            text=nor['SAE Grade'], hovertemplate='SAE %{text}<br>T=%{x}°<br>UTS=%{y} MPa<extra></extra>',
-            name='Datos'
-        ))
-        fig5.add_trace(go.Scatter(
-            x=xs_s, y=slope*xs_s+inter,
-            mode='lines', line=dict(color='#4fc3f7', width=2, dash='dash'),
-            name='Tendencia OLS'
-        ))
-        fig5.update_layout(
-            **DARK,
-            title="UTS vs Temperatura — Normalized",
-            xaxis_title="Temperatura de Normalizado",
-            yaxis_title="UTS (MPa)", height=480
-        )
-        st.plotly_chart(fig5, use_container_width=True)
+        if col_temp_5 and col_uts_5:
+            n_temp5 = col_temp_5[0]
+            n_uts5 = col_uts_5[0]
+            n_c5 = col_c_5[0] if col_c_5 else None
+            n_grade5 = col_grade_5[0] if col_grade_5 else None
+            
+            # Limpiamos los datos del subset 'nor' para evitar celdas vacías
+            nor_clean = nor.dropna(subset=[n_temp5, n_uts5])
+            
+            if len(nor_clean) > 0:
+                fig5 = go.Figure()
+                
+                # Configuración del color de los puntos (según %C si existe)
+                color_data_5 = nor_clean[n_c5] if n_c5 else '#FF6600'
+                
+                # 1. Dibujamos los puntos reales de los materiales normalizados
+                fig5.add_trace(go.Scatter(
+                    x=nor_clean[n_temp5], 
+                    y=nor_clean[n_uts5],
+                    mode='markers',
+                    marker=dict(
+                        color=color_data_5, 
+                        colorscale='YlOrRd' if n_c5 else None, 
+                        size=10,
+                        showscale=True if n_c5 else False,
+                        colorbar=dict(title='%C', thickness=12) if n_c5 else None
+                    ),
+                    text=nor_clean[n_grade5] if n_grade5 else None,
+                    hovertemplate="Grado: %{text}<br>T=%{x}°C<br>UTS=%{y} MPa<extra></extra>" if n_grade5 else "T=%{x}°C<br>UTS=%{y} MPa<extra></extra>",
+                    name='Datos'
+                ))
+                
+                # 2. Dibujamos la línea de tendencia de mínimos cuadrados si hay suficientes puntos
+                if len(nor_clean) > 1:
+                    xs5 = nor_clean[n_temp5].values
+                    ys5 = nor_clean[n_uts5].values
+                    slope5, inter5 = np.polyfit(xs5, ys5, 1)
+                    
+                    import numpy as np
+                    xs5_sorted = np.sort(xs5)
+                    ys5_trend = slope5 * xs5_sorted + inter5
+                    
+                    fig5.add_trace(go.Scatter(
+                        x=xs5_sorted, 
+                        y=ys5_trend,
+                        mode='lines', 
+                        line=dict(color='#e8c547', width=2, dash='dash'),
+                        name='Tendencia OLS'
+                    ))
+                
+                # 3. Diseño estético del gráfico interactivo
+                fig5.update_layout(
+                    title="UTS vs Temperatura - Normalized",
+                    xaxis_title="Temperatura de Normalizado",
+                    yaxis_title="UTS (MPa)",
+                    height=480,
+                    template="plotly_dark"
+                )
+                st.plotly_chart(fig5, use_container_width=True)
+            else:
+                st.warning("No hay suficientes registros numéricos para mostrar la gráfica de Normalizado.")
+        else:
+            st.warning("No se encontraron las columnas de Temperatura o UTS necesarias en tu archivo para esta pestaña.")
         st.markdown("""
         <div class="insight-box">
         <b>📌 Interpretación:</b> El normalizado muestra <b>menor variación</b> de UTS con la temperatura
