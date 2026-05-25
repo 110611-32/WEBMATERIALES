@@ -22,7 +22,7 @@ else:
     # Si no encuentra ninguno, te avisa en la pantalla con un texto amigable
     st.error("¡Ups! No se encontró ningún archivo .csv en el repositorio. Revisa que esté subido.")
     st.stop()
-)
+
 
 # Título principal
 st.title("Análisis de Propiedades Mecánicas del Acero")
