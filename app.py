@@ -10,8 +10,18 @@ st.set_page_config(
 )
 
 # Leer base de datos
-df = pd.read_csv(
-    "aceros.csv"
+import os
+
+# Buscamos de forma automática cualquier archivo que termine en .csv
+archivos_csv = [f for f in os.listdir('.') if f.lower().endswith('.csv')]
+
+if archivos_csv:
+    # Si encuentra uno, agarra el primero que vea y lo lee
+    df = pd.read_csv(archivos_csv[0])
+else:
+    # Si no encuentra ninguno, te avisa en la pantalla con un texto amigable
+    st.error("¡Ups! No se encontró ningún archivo .csv en el repositorio. Revisa que esté subido.")
+    st.stop()
 )
 
 # Título principal
