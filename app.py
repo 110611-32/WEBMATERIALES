@@ -366,31 +366,79 @@ with tab4:
         st.warning("No hay datos de Annealed en el rango filtrado.")
     else:
         # Trendline
-        xs, ys = ann['Temperature'].values, ann['UTS (MPa)'].values
-        slope, inter = np.polyfit(xs, ys, 1)
-        xs_s = np.sort(xs)
+        # =================================================================
+    # REEMPLAZO SEGURO DE LA GRÁFICA 4 (LÍNEAS 369 A 393)
+    # =================================================================
+    # Buscamos automáticamente las columnas correctas en tu archivo
+    col_temp = [c for c in df.columns if 'temp' in c.lower()]
+    col_uts_4 = [c for c in df.columns if 'uts' in c.lower() or 'tracc' in c.lower() or 'resis' in c.lower()]
+    col_c_4 = [c for c in df.columns if '%c' in c.lower() or 'carbon' in c.lower()]
+    col_grade = [c for c in df.columns if 'grade' in c.lower() or 'grado' in c.lower() or 'acer' in c.lower()]
 
-        fig4 = go.Figure()
-        fig4.add_trace(go.Scatter(
-            x=ann['Temperature'], y=ann['UTS (MPa)'],
-            mode='markers',
-            marker=dict(color=ann['%C'], colorscale='YlOrRd', size=10,
-                colorbar=dict(title='%C', thickness=12, tickfont=dict(color='#6b6b7a'), titlefont=dict(color='#6b6b7a'))),
-            text=ann['SAE Grade'], hovertemplate='SAE %{text}<br>T=%{x}°<br>UTS=%{y} MPa<extra></extra>',
-            name='Datos'
-        ))
-        fig4.add_trace(go.Scatter(
-            x=xs_s, y=slope*xs_s+inter,
-            mode='lines', line=dict(color='#e8c547', width=2, dash='dash'),
-            name='Tendencia OLS'
-        ))
-        fig4.update_layout(
-            **DARK,
-            title="UTS vs Temperatura — Annealed",
-            xaxis_title="Temperatura de Recocido",
-            yaxis_title="UTS (MPa)", height=480
-        )
-        st.plotly_chart(fig4, use_container_width=True)
+    if col_temp and col_uts_4:
+        n_temp = col_temp[0]
+        n_uts = col_uts_4[0]
+        n_c = col_c_4[0] if col_c_4 else None
+        n_grade = col_grade[0] if col_grade else None
+        
+        # Limpiamos los datos para evitar que valores vacíos rompan la matemática
+        ann_clean = ann.dropna(subset=[n_temp, n_uts])
+        
+        if len(ann_clean) > 0:
+            fig4 = go.Figure()
+            
+            # 1. Configuración del color de los puntos (según %C si existe)
+            color_data = ann_clean[n_c] if n_c else '#00CC96'
+            
+            # 2. Dibujamos los puntos reales
+            fig4.add_trace(go.Scatter(
+                x=ann_clean[n_temp], 
+                y=ann_clean[n_uts],
+                mode='markers',
+                marker=dict(
+                    color=color_data, 
+                    colorscale='YlOrRd' if n_c else None, 
+                    size=10,
+                    showscale=True if n_c else False,
+                    colorbar=dict(title='%C', thickness=12) if n_c else None
+                ),
+                text=ann_clean[n_grade] if n_grade else None,
+                hovertemplate="Grado: %{text}<br>T=%{x}°C<br>UTS=%{y} MPa<extra></extra>" if n_grade else "T=%{x}°C<br>UTS=%{y} MPa<extra></extra>",
+                name='Datos'
+            ))
+            
+            # 3. Dibujamos la línea de tendencia solo si hay más de 1 punto disponible
+            if len(ann_clean) > 1:
+                xs = ann_clean[n_temp].values
+                ys = ann_clean[n_uts].values
+                slope, inter = np.polyfit(xs, ys, 1)
+                
+                import numpy as np
+                xs_sorted = np.sort(xs)
+                ys_trend = slope * xs_sorted + inter
+                
+                fig4.add_trace(go.Scatter(
+                    x=xs_sorted, 
+                    y=ys_trend,
+                    mode='lines', 
+                    line=dict(color='#e8c547', width=2, dash='dash'),
+                    name='Tendencia OLS'
+                ))
+            
+            # 4. Diseño estético de la gráfica
+            fig4.update_layout(
+                title="UTS vs Temperatura - Annealed",
+                xaxis_title="Temperatura de Recocido",
+                yaxis_title="UTS (MPa)",
+                height=480,
+                template="plotly_dark"
+            )
+            st.plotly_chart(fig4, use_container_width=True)
+        else:
+            st.warning("No hay suficientes registros numéricos para mostrar la gráfica de Recocido.")
+    else:
+        st.warning("No se encontraron las columnas de Temperatura o UTS necesarias en tu archivo.")
+    # =================================================================
         st.markdown("""
         <div class="insight-box">
         <b>📌 Interpretación:</b> En el recocido, temperaturas mayores tienden a <b>disminuir el UTS</b>
