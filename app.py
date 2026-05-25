@@ -365,9 +365,8 @@ with tab4:
     if ann.empty:
         st.warning("No hay datos de Annealed en el rango filtrado.")
     else:
-        # Trendline
         # =================================================================
-    # REEMPLAZO SEGURO DE LA GRÁFICA 4 (LÍNEAS 369 A 393)
+    # NUEVO REEMPLAZO ALINEADO PARA LA GRÁFICA 4 (LÍNEAS 369 EN ADELANTE)
     # =================================================================
     # Buscamos automáticamente las columnas correctas en tu archivo
     col_temp = [c for c in df.columns if 'temp' in c.lower()]
