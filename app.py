@@ -85,21 +85,21 @@ for prop_col, name in mechanical_properties.items():
 
     temp_df = df_filtered.dropna(subset=['%C', prop_col])
 
-    if not temp_df.empty:
+if not temp_df.empty:
 
-        # Realizamos el cálculo solo si la tabla tiene datos y no hay valores vacíos
-temp_df_clean = temp_df[[ '%C', prop_col ]].dropna()
+    # Realizamos el cálculo solo si la tabla tiene datos y no hay valores vacíos
+    temp_df_clean = temp_df[[ '%C', prop_col ]].dropna()
 
-if len(temp_df_clean) > 1:
-    slope, intercept = np.polyfit(
-        temp_df_clean['%C'],
-        temp_df_clean[prop_col],
-        1
-    )
+    if len(temp_df_clean) > 1:
+        slope, intercept = np.polyfit(
+         temp_df_clean['%C'],
+          temp_df_clean[prop_col],
+           1
+           )
     # Aquí abajo deja la línea original de tu código que dibuja la tendencia, 
     # pero asegúrate de usar 'temp_df_clean' en lugar de 'temp_df' si es necesario.
-else:
-    st.warning("No hay suficientes datos disponibles para calcular la línea de tendencia con los filtros seleccionados.")
+    else:
+        st.warning("No hay suficientes datos disponibles para calcular la línea de tendencia con los filtros seleccionados.")
 
 fig1.update_layout(
     title="Propiedades mecánicas vs porcentaje de carbono",
@@ -107,7 +107,7 @@ fig1.update_layout(
     yaxis_title="Valor de propiedad",
     template="plotly_dark",
     height=700
-)
+    )
 
 st.plotly_chart(fig1, use_container_width=True)
 
