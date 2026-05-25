@@ -127,17 +127,14 @@ GROUPS = ['Quenched','Annealed','Normalized','Hot Rolled','Cold Drawn','Other']
 
 # ── DATA LOADING ─────────────────────────────────────────────
 @st.cache_data
-def load_data(uploaded_file=None):
-    if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file, sep=',', encoding='utf-8', dtype={'SAE Grade': str})
-    else:
-        try:
-            df = pd.read_csv(
-                "Steel- Property and Composition (Carbon Steel) - Steel- Property and Composition (Carbon Steel).csv",
-                sep=',', encoding='utf-8', dtype={'SAE Grade': str}
-            )
-        except FileNotFoundError:
-            return None
+def load_data():
+    try:
+        df = pd.read_csv(
+            "Steel- Property and Composition (Carbon Steel) - Steel- Property and Composition (Carbon Steel).csv",
+            sep=',', encoding='utf-8', dtype={'SAE Grade': str}
+        )
+    except FileNotFoundError:
+        return None
 
     # Clean Conditions
     df['Conditions'] = df['Conditions'].str.replace('  ', ' ').str.strip().str.title()
@@ -174,13 +171,9 @@ with st.sidebar:
     st.markdown("### 🔩 Acero al Carbono")
     st.markdown("---")
 
-    uploaded = st.file_uploader("📂 Cargar CSV", type=['csv'],
-        help="Sube tu archivo CSV de propiedades de acero")
-
-    st.markdown("---")
     st.markdown("**Filtros**")
 
-    df_raw = load_data(uploaded)
+    df_raw = load_data()
 
     if df_raw is not None:
         selected_groups = st.multiselect(
@@ -207,7 +200,7 @@ with st.sidebar:
 
 # ── MAIN CONTENT ─────────────────────────────────────────────
 if df_raw is None:
-    st.error("⚠️ No se encontró el archivo CSV. Por favor cárgalo desde la barra lateral.")
+    st.error("⚠️ No se encontró el archivo CSV. Asegúrate de que esté en la misma carpeta que app.py.")
     st.stop()
 
 # Apply filters
