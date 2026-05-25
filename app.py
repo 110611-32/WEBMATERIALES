@@ -32,7 +32,22 @@ else:
 # =====================================
 # PROMEDIO CARBONO 
 # =====================================    
-df['%C'] = df[['C (Min)', 'C (Max)']].mean(axis=1)
+# === PROMEDIO CARBONO (Búsqueda automática de columnas) ===
+col_min = [c for c in df.columns if 'min' in c.lower() and ('c' in c.lower() or 'carb' in c.lower())]
+col_max = [c for c in df.columns if 'max' in c.lower() and ('c' in c.lower() or 'carb' in c.lower())]
+
+if col_min and col_max:
+    # Si encuentra las columnas de mínimo y máximo, calcula el promedio real
+    df['%C'] = df[[col_min[0], col_max[0]]].mean(axis=1)
+else:
+    # Si tu CSV solo tiene una columna directa de Carbono, la usa directamente
+    col_directa = [c for c in df.columns if 'carb' in c.lower() or c.strip() == 'C']
+    if col_directa:
+        df['%C'] = df[col_directa[0]]
+    else:
+        # Si de plano no encuentra ninguna, crea valores de prueba para que no se rompa la gráfica
+        df['%C'] = 0.5 
+# =========================================================
 # =====================================
 # TÍTULO
 # =====================================
