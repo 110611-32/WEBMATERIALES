@@ -87,21 +87,19 @@ for prop_col, name in mechanical_properties.items():
 
     if not temp_df.empty:
 
-        slope, intercept = np.polyfit(
-            temp_df['%C'],
-            temp_df[prop_col],
-            1
-        )
+        # Realizamos el cálculo solo si la tabla tiene datos y no hay valores vacíos
+temp_df_clean = temp_df[[ '%C', prop_col ]].dropna()
 
-        y_trend = slope * x_range + intercept
-
-        fig1.add_trace(go.Scatter(
-            x=x_range,
-            y=y_trend,
-            mode='lines',
-            name=f'Tendencia {name}',
-            line=dict(width=4)
-        ))
+if len(temp_df_clean) > 1:
+    slope, intercept = np.polyfit(
+        temp_df_clean['%C'],
+        temp_df_clean[prop_col],
+        1
+    )
+    # Aquí abajo deja la línea original de tu código que dibuja la tendencia, 
+    # pero asegúrate de usar 'temp_df_clean' en lugar de 'temp_df' si es necesario.
+else:
+    st.warning("No hay suficientes datos disponibles para calcular la línea de tendencia con los filtros seleccionados.")
 
 fig1.update_layout(
     title="Propiedades mecánicas vs porcentaje de carbono",
