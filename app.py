@@ -11,7 +11,7 @@ st.set_page_config(
 
 # Leer base de datos
 df = pd.read_csv(
-    "Steel- Property and Composition (Carbon Steel) - Steel- Property and Composition (Carbon Steel).csv"
+    "aceros.csv"
 )
 
 # Título principal
