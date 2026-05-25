@@ -29,7 +29,10 @@ else:
     # Si no encuentra ninguno, te avisa en la pantalla con un texto amigable
     st.error("¡Ups! No se encontró ningún archivo .csv en el repositorio. Revisa que esté subido.")
     st.stop()
-
+# =====================================
+# PROMEDIO CARBONO 
+# =====================================    
+df['%C'] = df[['C (Min)', 'C (Max)']].mean(axis=1)
 # =====================================
 # TÍTULO
 # =====================================
