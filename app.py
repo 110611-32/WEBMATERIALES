@@ -306,11 +306,11 @@ with tab2:
         fig2.add_trace(go.Box(
             y=vals, name=g,
             marker_color=COLORS[i], line_color=COLORS[i],
-            fillcolor=COLORS[i].replace('#', 'rgba(') + ',0.15)'
+            opacity=0.7    #
         ))
 
     fig2.update_layout(
-        **DARK,
+    
         title="UTS (MPa) por Grupo de Tratamiento",
         xaxis_title="Grupo de Tratamiento",
         yaxis_title="Resistencia a la Tracción (MPa)",
