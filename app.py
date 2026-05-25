@@ -4,183 +4,500 @@ import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 
-# =====================================
-# CONFIGURACIÓN
-# =====================================
-
+# ── PAGE CONFIG ──────────────────────────────────────────────
 st.set_page_config(
-    page_title="Ingeniería de Materiales",
-    layout="wide"
+    page_title="Acero al Carbono — Análisis de Propiedades",
+    page_icon="🔩",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# =====================================
-# CARGAR BASE DE DATOS
-# =====================================
+# ── CUSTOM CSS ───────────────────────────────────────────────
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 
-import os
+    html, body, [class*="css"] {
+        font-family: 'DM Sans', sans-serif;
+    }
+    .main { background-color: #0a0a0b; }
+    .block-container { padding-top: 2rem; padding-bottom: 2rem; }
 
-# Buscamos de forma automática cualquier archivo que termine en .csv
-archivos_csv = [f for f in os.listdir('.') if f.lower().endswith('.csv')]
+    h1 { font-family: 'Bebas Neue', sans-serif !important; font-size: 3rem !important;
+         letter-spacing: 0.06em !important; color: #e8c547 !important; }
+    h2 { font-family: 'Bebas Neue', sans-serif !important; letter-spacing: 0.04em !important; color: #e8e8ec !important; }
+    h3 { color: #e8c547 !important; }
 
-if archivos_csv:
-    # Si encuentra uno, agarra el primero que vea y lo lee
-    df = pd.read_csv(archivos_csv[0])
-else:
-    # Si no encuentra ninguno, te avisa en la pantalla con un texto amigable
-    st.error("¡Ups! No se encontró ningún archivo .csv en el repositorio. Revisa que esté subido.")
+    .hero-box {
+        background: linear-gradient(135deg, #111114, #16161a);
+        border: 1px solid #2a2a32;
+        border-left: 4px solid #e8c547;
+        border-radius: 4px;
+        padding: 2rem 2.5rem;
+        margin-bottom: 2rem;
+    }
+    .hero-box p { color: #6b6b7a; font-size: 1rem; line-height: 1.8; }
+
+    .metric-card {
+        background: #16161a;
+        border: 1px solid #2a2a32;
+        border-radius: 4px;
+        padding: 1.2rem 1.5rem;
+        text-align: center;
+    }
+    .metric-num {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 2.5rem;
+        color: #e8c547;
+        line-height: 1;
+    }
+    .metric-label {
+        font-family: 'DM Mono', monospace;
+        font-size: 0.65rem;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: #6b6b7a;
+        margin-top: 0.3rem;
+    }
+
+    .section-tag {
+        font-family: 'DM Mono', monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: #e8c547;
+        margin-bottom: 0.5rem;
+    }
+
+    .insight-box {
+        background: #111114;
+        border-left: 3px solid #e8c547;
+        padding: 1rem 1.5rem;
+        border-radius: 0 4px 4px 0;
+        margin-top: 0.5rem;
+        color: #6b6b7a;
+        font-size: 0.88rem;
+        line-height: 1.75;
+    }
+    .insight-box b { color: #e8e8ec; }
+
+    .conc-card {
+        background: #16161a;
+        border: 1px solid #2a2a32;
+        border-radius: 4px;
+        padding: 1.5rem;
+        height: 100%;
+        transition: border-color 0.2s;
+    }
+    .conc-num {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 2.5rem;
+        color: #2a2a32;
+        line-height: 1;
+    }
+    .conc-title { color: #e8c547 !important; font-size: 1rem !important; font-weight: 500; margin: 0.4rem 0; }
+    .conc-text { color: #6b6b7a; font-size: 0.85rem; line-height: 1.7; }
+
+    .stSelectbox label, .stMultiSelect label { color: #6b6b7a !important; font-family: 'DM Mono', monospace; font-size: 0.75rem; }
+    div[data-testid="stSidebar"] { background: #111114; border-right: 1px solid #2a2a32; }
+    div[data-testid="stSidebar"] * { color: #e8e8ec; }
+
+    hr { border-color: #2a2a32; }
+    .stTabs [data-baseweb="tab-list"] { background: #111114; border-bottom: 1px solid #2a2a32; }
+    .stTabs [data-baseweb="tab"] { color: #6b6b7a; font-family: 'DM Mono', monospace; font-size: 0.75rem; letter-spacing: 0.1em; }
+    .stTabs [aria-selected="true"] { color: #e8c547 !important; border-bottom: 2px solid #e8c547 !important; }
+</style>
+""", unsafe_allow_html=True)
+
+# ── DARK PLOTLY THEME ────────────────────────────────────────
+DARK = dict(
+    paper_bgcolor='#16161a', plot_bgcolor='#16161a',
+    font=dict(family='DM Mono, monospace', color='#6b6b7a', size=11),
+    title_font=dict(family='Bebas Neue, sans-serif', size=20, color='#e8e8ec'),
+    xaxis=dict(gridcolor='#2a2a32', zerolinecolor='#2a2a32', color='#6b6b7a'),
+    yaxis=dict(gridcolor='#2a2a32', zerolinecolor='#2a2a32', color='#6b6b7a'),
+    colorway=['#e8c547','#4fc3f7','#ef5350','#66bb6a','#ab47bc','#ff7043'],
+    margin=dict(l=60, r=30, t=60, b=60),
+    legend=dict(bgcolor='rgba(0,0,0,0)', font=dict(color='#6b6b7a')),
+    hoverlabel=dict(bgcolor='#111114', bordercolor='#2a2a32', font=dict(color='#e8e8ec'))
+)
+
+COLORS = ['#e8c547','#4fc3f7','#ef5350','#66bb6a','#ab47bc','#ff7043']
+GROUPS = ['Quenched','Annealed','Normalized','Hot Rolled','Cold Drawn','Other']
+
+# ── DATA LOADING ─────────────────────────────────────────────
+@st.cache_data
+def load_data(uploaded_file=None):
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file, sep=',', encoding='utf-8', dtype={'SAE Grade': str})
+    else:
+        try:
+            df = pd.read_csv(
+                "Steel- Property and Composition (Carbon Steel) - Steel- Property and Composition (Carbon Steel).csv",
+                sep=',', encoding='utf-8', dtype={'SAE Grade': str}
+            )
+        except FileNotFoundError:
+            return None
+
+    # Clean Conditions
+    df['Conditions'] = df['Conditions'].str.replace('  ', ' ').str.strip().str.title()
+    df['Conditions'] = df['Conditions'].str.replace('Cold Orawn', 'Cold Drawn', regex=False)
+    df['Conditions'] = df['Conditions'].str.replace('Hot Rotted', 'Hot Rolled', regex=False)
+
+    # %C average
+    df['%C'] = df[['C (Min)', 'C (Max)']].mean(axis=1)
+
+    # Mechanical props to numeric
+    for col in ['UTS (MPa)', 'YS (MPa)', 'Hardness (HB)', 'Elongation (%)']:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+
+    # Treatment group
+    def categorize(cond):
+        cl = cond.lower()
+        if 'quenched'    in cl: return 'Quenched'
+        if 'annealed'    in cl: return 'Annealed'
+        if 'normalized'  in cl: return 'Normalized'
+        if 'hot rolled'  in cl: return 'Hot Rolled'
+        if 'cold drawn'  in cl: return 'Cold Drawn'
+        return 'Other'
+
+    df['Treatment Group'] = df['Conditions'].apply(categorize)
+
+    # Temperature extraction
+    df['Temperature'] = df['Conditions'].str.extract(r'(\d+)').astype(float)
+
+    return df
+
+
+# ── SIDEBAR ──────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("### 🔩 Acero al Carbono")
+    st.markdown("---")
+
+    uploaded = st.file_uploader("📂 Cargar CSV", type=['csv'],
+        help="Sube tu archivo CSV de propiedades de acero")
+
+    st.markdown("---")
+    st.markdown("**Filtros**")
+
+    df_raw = load_data(uploaded)
+
+    if df_raw is not None:
+        selected_groups = st.multiselect(
+            "Tratamientos",
+            options=GROUPS,
+            default=GROUPS,
+        )
+        c_range = st.slider(
+            "Rango de %C",
+            min_value=float(df_raw['%C'].min()),
+            max_value=float(df_raw['%C'].max()),
+            value=(float(df_raw['%C'].min()), float(df_raw['%C'].max())),
+            step=0.01
+        )
+
+    st.markdown("---")
+    st.markdown("""
+    <div style="font-family:'DM Mono',monospace; font-size:0.65rem;
+                letter-spacing:0.1em; color:#6b6b7a; text-align:center;">
+        CIENCIA DE MATERIALES<br>ACEROS SAE AL CARBONO
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ── MAIN CONTENT ─────────────────────────────────────────────
+if df_raw is None:
+    st.error("⚠️ No se encontró el archivo CSV. Por favor cárgalo desde la barra lateral.")
     st.stop()
-# =====================================
-# PROMEDIO CARBONO 
-# =====================================    
-# === PROMEDIO CARBONO (Búsqueda automática de columnas) ===
-col_min = [c for c in df.columns if 'min' in c.lower() and ('c' in c.lower() or 'carb' in c.lower())]
-col_max = [c for c in df.columns if 'max' in c.lower() and ('c' in c.lower() or 'carb' in c.lower())]
 
-if col_min and col_max:
-    # Si encuentra las columnas de mínimo y máximo, calcula el promedio real
-    df['%C'] = df[[col_min[0], col_max[0]]].mean(axis=1)
-else:
-    # Si tu CSV solo tiene una columna directa de Carbono, la usa directamente
-    col_directa = [c for c in df.columns if 'carb' in c.lower() or c.strip() == 'C']
-    if col_directa:
-        df['%C'] = df[col_directa[0]]
-    else:
-        # Si de plano no encuentra ninguna, crea valores de prueba para que no se rompa la gráfica
-        df['%C'] = 0.5 
-# =========================================================
-# =====================================
-# TÍTULO
-# =====================================
+# Apply filters
+df = df_raw[
+    df_raw['Treatment Group'].isin(selected_groups) &
+    df_raw['%C'].between(c_range[0], c_range[1])
+].copy()
 
-st.title("Análisis de Propiedades Mecánicas del Acero")
 
-st.write("""
-Sitio web interactivo para analizar la influencia
-del porcentaje de carbono y de los tratamientos térmicos
-sobre las propiedades mecánicas del acero.
-""")
+# ════════════════════════════════════════════════════════
+#  HERO
+# ════════════════════════════════════════════════════════
+st.markdown("# 🔩 Propiedades del Acero al Carbono")
+st.markdown("""
+<div class="hero-box">
+<p>
+Exploración interactiva de las propiedades mecánicas de los aceros al carbono clasificados
+según la norma <b style="color:#e8c547">SAE</b>. Analiza cómo la resistencia, dureza y ductilidad
+varían en función del contenido de carbono (%C) y el tratamiento térmico aplicado.
+Usa los filtros del panel izquierdo para personalizar el análisis.
+</p>
+</div>
+""", unsafe_allow_html=True)
 
-# =====================================
-# GRÁFICA 1
-# =====================================
+# Stats row
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    st.markdown(f'<div class="metric-card"><div class="metric-num">{len(df)}</div><div class="metric-label">Registros</div></div>', unsafe_allow_html=True)
+with c2:
+    st.markdown(f'<div class="metric-card"><div class="metric-num">{df["SAE Grade"].nunique()}</div><div class="metric-label">Grados SAE</div></div>', unsafe_allow_html=True)
+with c3:
+    st.markdown(f'<div class="metric-card"><div class="metric-num">{df["Treatment Group"].nunique()}</div><div class="metric-label">Tratamientos</div></div>', unsafe_allow_html=True)
+with c4:
+    avg_uts = int(df['UTS (MPa)'].mean()) if not df['UTS (MPa)'].isna().all() else 0
+    st.markdown(f'<div class="metric-card"><div class="metric-num">{avg_uts}</div><div class="metric-label">UTS Promedio (MPa)</div></div>', unsafe_allow_html=True)
 
-st.header("Líneas de tendencia: propiedades mecánicas vs porcentaje de carbono")
+st.markdown("<br>", unsafe_allow_html=True)
 
-df_filtered = df[df['%C'] < 2.0]
+# ════════════════════════════════════════════════════════
+#  TABS
+# ════════════════════════════════════════════════════════
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "📈 Tendencias vs %C",
+    "📦 UTS por Tratamiento",
+    "🔨 Dureza por Tratamiento",
+    "🔥 Annealed vs Temp",
+    "⚙️ Normalized vs Temp",
+    "📝 Conclusiones"
+])
 
-fig1 = go.Figure()
 
-mechanical_properties = {
-    'UTS (MPa)': 'UTS (MPa)',
-    'YS (MPa)': 'YS (MPa)',
-    'Hardness (HB)': 'Hardness (HB)',
-    'Elongation (%)': 'Elongation (%)'
-}
+# ── TAB 1: Trend lines ───────────────────────────────────────
+with tab1:
+    st.markdown('<div class="section-tag">/ Gráfica 01</div>', unsafe_allow_html=True)
+    st.markdown("## Propiedades Mecánicas vs. %C")
 
-x_min = df_filtered['%C'].min()
-x_max = df_filtered['%C'].max()
-x_range = np.array([x_min, x_max])
+    filtered = df[df['%C'] < 2.0].copy()
+    props = {
+        'UTS (MPa)':     ('#e8c547', 'UTS (MPa)'),
+        'YS (MPa)':      ('#4fc3f7', 'YS (MPa)'),
+        'Hardness (HB)': ('#ef5350', 'Dureza (HB)'),
+        'Elongation (%)':('#66bb6a', 'Elongación (%)')
+    }
 
-for prop_col, name in mechanical_properties.items():
+    fig1 = go.Figure()
+    xmin = filtered['%C'].min(); xmax = filtered['%C'].max()
 
-    temp_df = df_filtered.dropna(subset=['%C', prop_col])
+    for col, (color, label) in props.items():
+        tmp = filtered.dropna(subset=['%C', col])
+        if len(tmp) < 2: continue
+        slope, inter = np.polyfit(tmp['%C'], tmp[col], 1)
+        fig1.add_trace(go.Scatter(
+            x=[xmin, xmax], y=[slope*xmin+inter, slope*xmax+inter],
+            mode='lines', name=label,
+            line=dict(color=color, width=2.5)
+        ))
 
-if not temp_df.empty:
-
-    # Realizamos el cálculo solo si la tabla tiene datos y no hay valores vacíos
-    temp_df_clean = temp_df[[ '%C', prop_col ]].dropna()
-
-    if len(temp_df_clean) > 1:
-        slope, intercept = np.polyfit(
-         temp_df_clean['%C'],
-          temp_df_clean[prop_col],
-           1
-           )
-    # Aquí abajo deja la línea original de tu código que dibuja la tendencia, 
-    # pero asegúrate de usar 'temp_df_clean' en lugar de 'temp_df' si es necesario.
-    else:
-        st.warning("No hay suficientes datos disponibles para calcular la línea de tendencia con los filtros seleccionados.")
-
-fig1.update_layout(
-    title="Propiedades mecánicas vs porcentaje de carbono",
-    xaxis_title="Contenido de carbono promedio (%C)",
-    yaxis_title="Valor de propiedad",
-    template="plotly_dark",
-    height=700
+    fig1.update_layout(
+        **DARK,
+        title="Líneas de Tendencia — Propiedades Mecánicas vs %C",
+        xaxis_title="Contenido de Carbono Promedio (%C)",
+        yaxis_title="Valor de Propiedad",
+        height=480
     )
+    st.plotly_chart(fig1, use_container_width=True)
+    st.markdown("""
+    <div class="insight-box">
+    <b>📌 Interpretación:</b> Se observa una tendencia <b>positiva</b> entre %C y las propiedades de resistencia
+    (UTS, YS, Dureza), mientras que la <b>elongación disminuye</b> con mayor contenido de carbono.
+    Esto refleja el endurecimiento por precipitación de carburo de hierro (cementita).
+    </div>""", unsafe_allow_html=True)
 
-st.plotly_chart(fig1, use_container_width=True)
 
-# =====================================
-# GRÁFICA 2
-# =====================================
+# ── TAB 2: UTS Box ───────────────────────────────────────────
+with tab2:
+    st.markdown('<div class="section-tag">/ Gráfica 02</div>', unsafe_allow_html=True)
+    st.markdown("## UTS (MPa) por Grupo de Tratamiento")
 
-st.header("UTS según grupo de tratamiento")
+    fig2 = go.Figure()
+    for i, g in enumerate(GROUPS):
+        vals = df[df['Treatment Group'] == g]['UTS (MPa)'].dropna()
+        if vals.empty: continue
+        fig2.add_trace(go.Box(
+            y=vals, name=g,
+            marker_color=COLORS[i], line_color=COLORS[i],
+            fillcolor=COLORS[i].replace('#', 'rgba(') + ',0.15)'
+        ))
 
-fig2 = px.box(
-    df,
-    x='Treatment Group',
-    y='UTS (MPa)',
-    title='UTS (MPa) por Grupo de Tratamiento',
-    labels={
-        'Treatment Group': 'Grupo de Tratamiento',
-        'UTS (MPa)': 'Resistencia a la Tracción (MPa)'
-    },
-    template='plotly_dark',
-    color='Treatment Group'
-)
+    fig2.update_layout(
+        **DARK,
+        title="UTS (MPa) por Grupo de Tratamiento",
+        xaxis_title="Grupo de Tratamiento",
+        yaxis_title="Resistencia a la Tracción (MPa)",
+        showlegend=False, height=480
+    )
+    st.plotly_chart(fig2, use_container_width=True)
+    st.markdown("""
+    <div class="insight-box">
+    <b>📌 Interpretación:</b> El tratamiento de <b>Quenched & Tempered</b> produce los valores más altos de UTS.
+    El <b>Cold Drawn</b> también incrementa la resistencia por endurecimiento por deformación.
+    Los aceros <b>Annealed</b> muestran la menor resistencia, ideal para maquinabilidad.
+    </div>""", unsafe_allow_html=True)
 
-fig2.update_layout(
-    height=650
-)
 
-st.plotly_chart(fig2, use_container_width=True)
+# ── TAB 3: Hardness Box ──────────────────────────────────────
+with tab3:
+    st.markdown('<div class="section-tag">/ Gráfica 03</div>', unsafe_allow_html=True)
+    st.markdown("## Dureza (HB) por Grupo de Tratamiento")
 
-# =====================================
-# GRÁFICA 3
-# =====================================
+    fig3 = go.Figure()
+    for i, g in enumerate(GROUPS):
+        vals = df[df['Treatment Group'] == g]['Hardness (HB)'].dropna()
+        if vals.empty: continue
+        fig3.add_trace(go.Box(
+            y=vals, name=g,
+            marker_color=COLORS[i], line_color=COLORS[i]
+        ))
 
-st.header("Dureza según grupo de tratamiento")
+    fig3.update_layout(
+        **DARK,
+        title="Dureza (HB) por Grupo de Tratamiento",
+        xaxis_title="Grupo de Tratamiento",
+        yaxis_title="Dureza Brinell (HB)",
+        showlegend=False, height=480
+    )
+    st.plotly_chart(fig3, use_container_width=True)
+    st.markdown("""
+    <div class="insight-box">
+    <b>📌 Interpretación:</b> La dureza Brinell sigue el mismo patrón que el UTS.
+    El temple maximiza la dureza; el recocido produce aceros más blandos y deformables,
+    adecuados para procesos de conformado metálico.
+    </div>""", unsafe_allow_html=True)
 
-fig3 = px.box(
-    df,
-    x='Treatment Group',
-    y='Hardness (HB)',
-    title='Dureza (HB) por Grupo de Tratamiento',
-    labels={
-        'Treatment Group': 'Grupo de Tratamiento',
-        'Hardness (HB)': 'Dureza (HB)'
-    },
-    template='plotly_dark',
-    color='Treatment Group'
-)
 
-fig3.update_layout(
-    height=650
-)
+# ── TAB 4: Annealed scatter ──────────────────────────────────
+with tab4:
+    st.markdown('<div class="section-tag">/ Gráfica 04</div>', unsafe_allow_html=True)
+    st.markdown("## UTS vs Temperatura — Acero Recocido (Annealed)")
 
-st.plotly_chart(fig3, use_container_width=True)
+    ann = df[df['Conditions'].str.contains('Annealed', case=False, na=False)].dropna(subset=['Temperature','UTS (MPa)','%C'])
 
-# =====================================
-# CONCLUSIONES
-# =====================================
+    if ann.empty:
+        st.warning("No hay datos de Annealed en el rango filtrado.")
+    else:
+        # Trendline
+        xs, ys = ann['Temperature'].values, ann['UTS (MPa)'].values
+        slope, inter = np.polyfit(xs, ys, 1)
+        xs_s = np.sort(xs)
 
-st.header("Conclusiones")
+        fig4 = go.Figure()
+        fig4.add_trace(go.Scatter(
+            x=ann['Temperature'], y=ann['UTS (MPa)'],
+            mode='markers',
+            marker=dict(color=ann['%C'], colorscale='YlOrRd', size=10,
+                colorbar=dict(title='%C', thickness=12, tickfont=dict(color='#6b6b7a'), titlefont=dict(color='#6b6b7a'))),
+            text=ann['SAE Grade'], hovertemplate='SAE %{text}<br>T=%{x}°<br>UTS=%{y} MPa<extra></extra>',
+            name='Datos'
+        ))
+        fig4.add_trace(go.Scatter(
+            x=xs_s, y=slope*xs_s+inter,
+            mode='lines', line=dict(color='#e8c547', width=2, dash='dash'),
+            name='Tendencia OLS'
+        ))
+        fig4.update_layout(
+            **DARK,
+            title="UTS vs Temperatura — Annealed",
+            xaxis_title="Temperatura de Recocido",
+            yaxis_title="UTS (MPa)", height=480
+        )
+        st.plotly_chart(fig4, use_container_width=True)
+        st.markdown("""
+        <div class="insight-box">
+        <b>📌 Interpretación:</b> En el recocido, temperaturas mayores tienden a <b>disminuir el UTS</b>
+        (ablandamiento progresivo). Los puntos de mayor <b>%C</b> (colores más oscuros) mantienen
+        valores de resistencia más altos incluso después del recocido.
+        </div>""", unsafe_allow_html=True)
 
-st.write("""
-- El porcentaje de carbono influye significativamente
-en las propiedades mecánicas del acero.
 
-- Conforme aumenta el contenido de carbono,
-la dureza y la resistencia mecánica tienden a aumentar.
+# ── TAB 5: Normalized scatter ────────────────────────────────
+with tab5:
+    st.markdown('<div class="section-tag">/ Gráfica 05</div>', unsafe_allow_html=True)
+    st.markdown("## UTS vs Temperatura — Acero Normalizado (Normalized)")
 
-- Los tratamientos térmicos producen variaciones importantes
-en el comportamiento mecánico del material.
+    nor = df[df['Conditions'].str.contains('Normalized', case=False, na=False)].dropna(subset=['Temperature','UTS (MPa)','%C'])
 
-- Los diagramas tipo boxplot permiten visualizar
-la dispersión y distribución de propiedades mecánicas
-según el tratamiento aplicado.
+    if nor.empty:
+        st.warning("No hay datos de Normalized en el rango filtrado.")
+    else:
+        xs, ys = nor['Temperature'].values, nor['UTS (MPa)'].values
+        slope, inter = np.polyfit(xs, ys, 1) if len(xs) > 1 else (0, ys.mean())
+        xs_s = np.sort(xs)
 
-- La visualización interactiva facilita el análisis
-de grandes cantidades de datos experimentales.
-""")
+        fig5 = go.Figure()
+        fig5.add_trace(go.Scatter(
+            x=nor['Temperature'], y=nor['UTS (MPa)'],
+            mode='markers',
+            marker=dict(color=nor['%C'], colorscale='Viridis', size=10,
+                colorbar=dict(title='%C', thickness=12, tickfont=dict(color='#6b6b7a'), titlefont=dict(color='#6b6b7a'))),
+            text=nor['SAE Grade'], hovertemplate='SAE %{text}<br>T=%{x}°<br>UTS=%{y} MPa<extra></extra>',
+            name='Datos'
+        ))
+        fig5.add_trace(go.Scatter(
+            x=xs_s, y=slope*xs_s+inter,
+            mode='lines', line=dict(color='#4fc3f7', width=2, dash='dash'),
+            name='Tendencia OLS'
+        ))
+        fig5.update_layout(
+            **DARK,
+            title="UTS vs Temperatura — Normalized",
+            xaxis_title="Temperatura de Normalizado",
+            yaxis_title="UTS (MPa)", height=480
+        )
+        st.plotly_chart(fig5, use_container_width=True)
+        st.markdown("""
+        <div class="insight-box">
+        <b>📌 Interpretación:</b> El normalizado muestra <b>menor variación</b> de UTS con la temperatura
+        respecto al recocido, produciendo una microestructura perlítica más uniforme.
+        El %C sigue siendo el factor dominante para la resistencia final.
+        </div>""", unsafe_allow_html=True)
+
+
+# ── TAB 6: Conclusions ───────────────────────────────────────
+with tab6:
+    st.markdown('<div class="section-tag">/ Conclusiones</div>', unsafe_allow_html=True)
+    st.markdown("## Hallazgos Principales")
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    conclusions = [
+        ("01", "Carbono como Factor Dominante",
+         "El %C tiene correlación positiva con UTS, YS y dureza, y negativa con la elongación. Es el factor alótropo principal del acero."),
+        ("02", "Temple Maximiza Resistencia",
+         "Los aceros Quenched & Tempered alcanzan los valores más altos de UTS y dureza HB, con alta dispersión por efecto del revenido."),
+        ("03", "Recocido Facilita Maquinabilidad",
+         "El Annealed reduce resistencia y dureza, produciendo aceros más blandos y dúctiles, ideales para conformado y maquinado."),
+        ("04", "Trefilado Refuerza Sin Calentar",
+         "El Cold Drawn incrementa la resistencia por endurecimiento por deformación, sin alterar la composición química del acero."),
+        ("05", "Temperatura Secundaria al %C",
+         "En recocido y normalizado, la temperatura influye en las propiedades, pero su efecto es secundario frente al contenido de carbono."),
+        ("06", "Variabilidad Intra-grupo en Temple",
+         "Los box plots revelan alta variabilidad en el grupo Quenched, reflejando la influencia del grado SAE y la temperatura de revenido."),
+    ]
+
+    col1, col2, col3 = st.columns(3)
+    cols = [col1, col2, col3]
+
+    for i, (num, title, text) in enumerate(conclusions):
+        with cols[i % 3]:
+            st.markdown(f"""
+            <div class="conc-card">
+                <div class="conc-num">{num}</div>
+                <div class="conc-title">{title}</div>
+                <div class="conc-text">{text}</div>
+            </div>
+            <br>
+            """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, rgba(232,197,71,0.06), rgba(79,195,247,0.04));
+                border: 1px solid rgba(232,197,71,0.25); border-radius: 4px; padding: 2rem; margin-top: 1rem;">
+    <h3 style="color:#e8c547 !important; font-family:'Bebas Neue',sans-serif; letter-spacing:0.06em;">
+        🔬 Reflexión Final
+    </h3>
+    <p style="color:#6b6b7a; font-size:0.92rem; line-height:1.8; margin:0;">
+        Los resultados confirman el modelo clásico de la metalurgia física: el carbono endurece el acero
+        aumentando la resistencia a expensas de la ductilidad, y los tratamientos térmicos permiten ajustar
+        este balance según las necesidades de la aplicación. Para la selección de materiales en ingeniería,
+        es indispensable considerar simultáneamente el <b style="color:#e8c547">grado SAE</b> (composición) y el
+        <b style="color:#4fc3f7">tratamiento térmico</b> (procesamiento), ya que ambos factores interactúan
+        para definir el desempeño final de la pieza.
+    </p>
+    </div>
+    """, unsafe_allow_html=True)
